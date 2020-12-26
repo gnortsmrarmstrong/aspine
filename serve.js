@@ -10,8 +10,8 @@ const session = require('express-session');
 const MemoryStore = require('memorystore')(session)
 const crypto = require('crypto');
 const http = require('http');
+const http2 = require('http2');
 const fs = require('fs');
-const https = require('https');
 const args = require('minimist')(process.argv.slice(2));
 const compression = require('compression');
 const child_process = require('child_process');
@@ -35,34 +35,26 @@ const app = express();
 app.use(compression({ filter: (..._) => true }));
 app.listen(port, () => console.log(`Aspine listening on port ${port}!`));
 
-if(!(args.hasOwnProperty('insecure') || args._.includes("insecure"))) {
-    // Certificate
-    const privateKey = fs.readFileSync('/etc/ssl/certs/private-key.pem', 'utf8');
-    const certificate = fs.readFileSync('/etc/ssl/certs/public-key.pem', 'utf8');
-    const ca = fs.readFileSync('/etc/ssl/certs/CA-key.pem', 'utf8');
-
-    const credentials = {
-        key: privateKey,
-        cert: certificate,
-        ca: ca
-    };
-
-    app.all('*', ensureSecure); // at top of routing calls
-
-    http.createServer(app).listen(8090);
-    https.createServer(credentials, app).listen(4430, () => { //443
-        console.log('HTTPS Server running on port 4430'); //443
-    });
-
-    function ensureSecure(req, res, next){
-        if(req.secure){
-            // OK, continue
+if (!(args.hasOwnProperty('insecure') || args._.includes("insecure"))) {
+    app.all('*', (req, res, next) => {
+        if (req.secure) {
             return next();
         }
         // handle port numbers if you need non defaults
-        // res.redirect('https://' + req.host + req.url); // express 3.x
-        res.redirect('https://' + req.hostname + req.url); // express 4.x
-    }
+        res.redirect('https://' + req.hostname + req.url);
+    });
+
+    const options = {
+        key: fs.readFileSync('/etc/ssl/certs/private-key.pem', 'utf8'),
+        cert: fs.readFileSync('/etc/ssl/certs/public-key.pem', 'utf8'),
+        ca: fs.readFileSync('/etc/ssl/certs/CA-key.pem', 'utf8'),
+        // Allow HTTP/1.x for backwards compatibility
+        // allowHTTP1: true,
+    };
+
+    http2.createSecureServer(options, app).listen(4430, () => {
+        console.log('HTTPS Server running on port 4430');
+    });
 }
 
 // Expose frontend dependencies from node-modules

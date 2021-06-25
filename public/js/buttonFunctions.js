@@ -439,16 +439,24 @@ let importTableData = async function(obj) {
   termConverter.forEach(term => {
     if (!currentTerm && obj.terms[term]) currentTerm = term;
   });
+
+  // Populate obj.recent if it does not exist
+  // (e.g., from a previous year export)
+  obj.recent ||= {
+    recentActivityArray: [],
+    recentAttendanceArray: [],
+  };
+
   if (currentTerm) responseCallback({
     username: obj.username || "",
     recent: {
       recentActivityArray: obj.recent.recentActivityArray || [],
-      recentAttendanceArray: obj.recent.recentAttendanceArray || []
+      recentAttendanceArray: obj.recent.recentAttendanceArray || [],
     },
     overview: obj.overview || [],
     classes: obj.terms[currentTerm].classes || [],
     GPA: obj.terms[currentTerm].GPA || undefined,
-    cumGPA: obj.cumGPA || undefined
+    cumGPA: obj.cumGPA || undefined,
   }, includedTerms);
 
   scheduleCallback(obj.schedule || {});
@@ -464,6 +472,8 @@ let importTableData = async function(obj) {
   });
 
   currentTerm = firstTerm;
+  console.log(currentTerm);
+  console.log(currentTableData);
 
   for (const i in tableData) {
     if (!$(`#tableData_select option[value='${i}']`)[0]) {
@@ -504,5 +514,6 @@ let importTableData = async function(obj) {
       tableData[1].name;
   }
 
+  console.log(currentTerm);
   $(`#tableData_select-items-${currentTableDataIndex}`).click();
 };

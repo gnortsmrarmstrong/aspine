@@ -154,6 +154,7 @@ let gradeFormatter = function(cell, formatterParams) {
 let listener = function({ target }, callback = () => {}) {
   /* When an item is clicked, update the original select box,
   and the selected item: */
+  console.log(target);
 
   if (term_dropdown_active) {
     let y, i, k, s, h;
